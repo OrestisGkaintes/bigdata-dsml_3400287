@@ -9,10 +9,11 @@ It assumes you already completed:
 
 ## What this guide covers
 
-1. How to change `spark-submit` settings for executors, cores, and memory.
-2. How to measure execution time correctly for fair comparisons.
-3. How to inspect and influence join strategies (`BROADCAST`, `MERGE`, `SHUFFLE_HASH`, `SHUFFLE_REPLICATE_NL`).
-4. How to keep experiments reproducible for reporting.
+1. How to read GeoJSON datasets into a Spark DataFrame.
+2. How to change `spark-submit` settings for executors, cores, and memory.
+3. How to measure execution time correctly for fair comparisons.
+4. How to inspect and influence join strategies (`BROADCAST`, `MERGE`, `SHUFFLE_HASH`, `SHUFFLE_REPLICATE_NL`).
+5. How to keep experiments reproducible for reporting.
 
 ## Keep runs reproducible
 
@@ -33,7 +34,32 @@ hash -r
 command -v spark-submit
 ```
 
-## 1. Changing executor settings
+## 1. Reading the GeoJSON dataset into a DataFrame
+
+The GeoJSON files provided in the datasets use the standard `FeatureCollection` structure, so the actual records are inside the `features` array. To work with them as a regular Spark DataFrame, read the file with `multiLine=true`, `explode` the `features` array, and then flatten the fields under `properties`.
+
+```python
+from pyspark.sql import functions as F
+
+blocks_df = (
+    spark.read
+    .option("multiLine", "true")
+    .json(geojson_path)
+).selectExpr("explode(features) as features") \
+ .select("features.*")
+
+flattened_blocks_df = blocks_df.select(
+    [
+        F.col(f"properties.{col_name}").alias(col_name)
+        for col_name in blocks_df.schema["properties"].dataType.fieldNames()
+    ]
+    + ["geometry"]
+).drop("properties").drop("type")
+```
+
+With this pattern, the values under `properties` become top-level columns, while `geometry` remains available for the GeoJSON spatial data.
+
+## 2. Changing executor settings
 
 The assignment requires specific resource configurations.  
 The safest practice is to apply `--conf` per run (instead of permanently editing default files).
@@ -49,7 +75,7 @@ spark-submit \
   --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
 ```
 
-## 2. Timing execution correctly
+## 3. Timing execution correctly
 
 Do not treat shell timing around `spark-submit` as reliable Spark runtime.  
 In cluster mode, `spark-submit` can finish submission while the application keeps running in Kubernetes.
@@ -91,7 +117,7 @@ spark-submit \
 
 Then use the `Duration` value from History Server in your comparison table, if the service is available.
 
-## 3. Join strategies: inspect and experiment
+## 4. Join strategies: inspect and experiment
 
 ### Inspect what Catalyst chose
 
@@ -137,10 +163,9 @@ SELECT /*+ SHUFFLE_HASH(a) */ ...
 SELECT /*+ SHUFFLE_REPLICATE_NL(dim) */ ...
 ```
 
-## 4. Final checklist before submission
+## 5. Final checklist before submission
 
 - Confirm all API variants requested by the assignment are implemented.
 - Confirm there is execution evidence for each required resource configuration.
 - Include runtime comparison tables and concise technical commentary.
 - Keep a stable repository commit for the oral examination.
-

@@ -9,10 +9,11 @@
 
 ## Τι καλύπτει αυτός ο οδηγός
 
-1. Πώς αλλάζουν οι ρυθμίσεις `spark-submit` για executors, cores και memory.
-2. Πώς γίνεται σωστή μέτρηση χρόνου εκτέλεσης για δίκαιες συγκρίσεις.
-3. Πώς ελέγχουμε και επηρεάζουμε join strategies (`BROADCAST`, `MERGE`, `SHUFFLE_HASH`, `SHUFFLE_REPLICATE_NL`).
-4. Πώς οργανώνουμε αναπαραγώγιμα πειράματα για την αναφορά.
+1. Πώς διαβάζουμε GeoJSON datasets σε Spark DataFrame.
+2. Πώς αλλάζουν οι ρυθμίσεις `spark-submit` για executors, cores και memory.
+3. Πώς γίνεται σωστή μέτρηση χρόνου εκτέλεσης για δίκαιες συγκρίσεις.
+4. Πώς ελέγχουμε και επηρεάζουμε join strategies (`BROADCAST`, `MERGE`, `SHUFFLE_HASH`, `SHUFFLE_REPLICATE_NL`).
+5. Πώς οργανώνουμε αναπαραγώγιμα πειράματα για την αναφορά.
 
 ## Κράτα τις εκτελέσεις αναπαραγώγιμες
 
@@ -33,7 +34,32 @@ hash -r
 command -v spark-submit
 ```
 
-## 1. Αλλαγή ρυθμίσεων executors
+## 1. Ανάγνωση GeoJSON dataset σε DataFrame
+
+Τα GeoJSON αρχεία που δίνονται στα datasets έχουν τη βασική δομή `FeatureCollection`, δηλαδή τα πραγματικά records βρίσκονται μέσα στον πίνακα `features`. Για να τα δουλέψεις ως κανονικό Spark DataFrame, διάβασε το αρχείο με `multiLine=true`, κάνε `explode` στο `features`, και στη συνέχεια κάνε flatten τα πεδία του `properties`.
+
+```python
+from pyspark.sql import functions as F
+
+blocks_df = (
+    spark.read
+    .option("multiLine", "true")
+    .json(geojson_path)
+).selectExpr("explode(features) as features") \
+ .select("features.*")
+
+flattened_blocks_df = blocks_df.select(
+    [
+        F.col(f"properties.{col_name}").alias(col_name)
+        for col_name in blocks_df.schema["properties"].dataType.fieldNames()
+    ]
+    + ["geometry"]
+).drop("properties").drop("type")
+```
+
+Με αυτό το σχήμα, οι τιμές του `properties` γίνονται top-level στήλες και η στήλη `geometry` παραμένει διαθέσιμη για τα χωρικά στοιχεία του GeoJSON.
+
+## 2. Αλλαγή ρυθμίσεων executors
 
 Στην εκφώνηση ζητούνται συγκεκριμένα configurations.  
 Η πιο ασφαλής πρακτική είναι `--conf` ανά εκτέλεση (όχι μόνιμη αλλαγή default αρχείων).
@@ -51,8 +77,7 @@ spark-submit \
 
 
 
-## 2. Σωστή μέτρηση χρόνου εκτέλεσης
-
+## 3. Σωστή μέτρηση χρόνου εκτέλεσης
 
 Μη θεωρείς ως αξιόπιστο runtime το shell timing γύρω από το `spark-submit`.  
 Σε cluster mode, το `spark-submit` μπορεί να ολοκληρώσει το submission flow ενώ το application συνεχίζει στο Kubernetes.
@@ -95,7 +120,7 @@ spark-submit \
 Μετά πάρε τον χρόνο από το πεδίο `Duration` στον History Server, αν είναι διαθέσιμος, για τον πίνακα συγκρίσεων.
 
 
-## 3. Join strategies: έλεγχος και πειραματισμός
+## 4. Join strategies: έλεγχος και πειραματισμός
 
 ### Δες τι διάλεξε ο Catalyst
 
@@ -141,7 +166,7 @@ SELECT /*+ SHUFFLE_HASH(a) */ ...
 SELECT /*+ SHUFFLE_REPLICATE_NL(dim) */ ...
 ```
 
-## 4. Τελικό checklist πριν την υποβολή
+## 5. Τελικό checklist πριν την υποβολή
 
 - Υλοποιήθηκαν όλες οι API εκδοχές που ζητά η εκφώνηση.
 - Υπάρχει evidence εκτέλεσης για κάθε ζητούμενο resource configuration.
