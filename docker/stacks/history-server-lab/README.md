@@ -8,13 +8,18 @@ Typical setup:
 
 ```bash
 cd ~/bigdata-dsml/docker/stacks/history-server-lab
-cp .env.example .env
-# edit .env and set SPARK_HISTORY_LOG_DIR for your user, for example:
-# SPARK_HISTORY_LOG_DIR=hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs
+source ~/bigdata-env.sh
+bigdata_write_history_env
+cat .env
 docker compose up --build -d
 ```
 
 This standalone lab stack defaults to `18086` so it can run alongside the local `spark-history` service that uses `18081`.
+
+The `HADOOP_USER_NAME` line is required because the lab HDFS uses simple
+authentication and student log directories are private. Without it the History
+Server container runs as the Linux user `root`, which is not the intended HDFS
+identity for reading your event logs.
 
 Recommended smoke test:
 

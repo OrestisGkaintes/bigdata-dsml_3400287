@@ -64,7 +64,9 @@ If any of the above is missing, go back to `01_workstation-setup` first and comp
 Keep the paths in one shared file, not scattered across `~/.bashrc`.
 
 ```bash
+cd ~/bigdata-dsml
 mkdir -p ~/.spark/conf ~/.hadoop/conf
+cp templates/wsl/bigdata-env.sh ~/bigdata-env.sh
 nano ~/bigdata-env.sh
 ```
 
@@ -72,8 +74,15 @@ Put this inside:
 
 <!-- AUTO-CODE: templates/wsl/bigdata-env.sh -->
 ``` bash
-# Shared Spark/Hadoop/Kubernetes environment for the lab WSL setup.
+# Shared Spark/Hadoop/Kubernetes environment for the DSML lab WSL setup.
 # Default baseline: Spark 3.5.8 + Hadoop client 3.4.1 + Java 11.
+#
+# This file is sourced by interactive shells. Keep top-level code idempotent:
+# exports and function definitions are safe, but setup actions should happen
+# only when you call an explicit helper function.
+
+# Change this one line to the username assigned by the DSML lab.
+export DSML_USER="your_dsml_username"
 
 export SPARK_HOME="$HOME/spark-3.5.8-bin-hadoop3"
 export HADOOP_HOME="$HOME/hadoop-3.4.1"
@@ -82,11 +91,78 @@ export SPARK_CONF_DIR="$HOME/.spark/conf"
 export HADOOP_CONF_DIR="$HOME/.hadoop/conf"
 export PATH="$HOME/.local/bin:$SPARK_HOME/bin:$HADOOP_HOME/bin:$PATH"
 export KUBE_EDITOR=nano
-export HADOOP_USER_NAME="$USER"
+export HADOOP_USER_NAME="$DSML_USER"
+export HADOOP_ROOT_LOGGER=ERROR,console
+
+bigdata_require_dsml_user() {
+    local placeholder
+    placeholder="$(printf '%s_%s_%s' your dsml username)"
+
+    if [ -z "${DSML_USER:-}" ] || [ "$DSML_USER" = "$placeholder" ]; then
+        echo "Set DSML_USER in ~/bigdata-env.sh first." >&2
+        return 1
+    fi
+}
+
+bigdata_write_spark_defaults() {
+    # Spark does not expand shell variables inside spark-defaults.conf.
+    # Generate the file from DSML_USER so the final config is explicit
+    # and easy to inspect when debugging a failed submit.
+    bigdata_require_dsml_user || return 1
+
+    mkdir -p "$SPARK_CONF_DIR"
+
+    cat > "$SPARK_CONF_DIR/spark-defaults.conf" <<EOF
+# Generated from ~/bigdata-env.sh for DSML_USER=${DSML_USER}.
+
+spark.master                                   k8s://https://termi7.cslab.ece.ntua.gr:6443
+spark.submit.deployMode                        cluster
+spark.kubernetes.namespace                     ${DSML_USER}-priv
+spark.kubernetes.authenticate.driver.serviceAccountName spark
+spark.kubernetes.container.image               apache/spark:3.5.8-scala2.12-java11-python3-ubuntu
+spark.executor.instances                       1
+spark.kubernetes.submission.waitAppCompletion  false
+spark.kubernetes.driverEnv.HADOOP_USER_NAME    ${DSML_USER}
+spark.executorEnv.HADOOP_USER_NAME             ${DSML_USER}
+spark.kubernetes.file.upload.path              hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/${DSML_USER}/.spark-upload
+spark.eventLog.enabled                         true
+spark.eventLog.dir                             hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/${DSML_USER}/logs
+spark.history.fs.logDirectory                  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/${DSML_USER}/logs
+EOF
+
+    echo "Wrote $SPARK_CONF_DIR/spark-defaults.conf"
+}
+
+bigdata_write_history_env() {
+    # The standalone History Server is a Docker stack. It also needs the same
+    # HDFS identity, because each student's event logs are private.
+    bigdata_require_dsml_user || return 1
+
+    local stack_dir="${1:-$HOME/bigdata-dsml/docker/stacks/history-server-lab}"
+    if [ ! -d "$stack_dir" ]; then
+        echo "History Server stack not found: $stack_dir" >&2
+        return 1
+    fi
+
+    cat > "$stack_dir/.env" <<EOF
+SPARK_HISTORY_UI_HOST_PORT=18086
+HADOOP_USER_NAME=${DSML_USER}
+SPARK_HISTORY_LOG_DIR=hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/${DSML_USER}/logs
+EOF
+
+    echo "Wrote $stack_dir/.env"
+}
 ```
 <!-- END AUTO-CODE -->
 
-Then source this file from both `~/.profile` and `~/.bashrc`.
+> **Important:** `DSML_USER` may differ from your WSL Linux username and is used for HDFS paths and Kubernetes namespaces.
+
+### Activating the environment in every new shell
+
+Bash reads a different startup file depending on how a shell is opened:
+
+- `~/.profile` - read once when a **login shell** starts (each time WSL opens). Environment variables set here are inherited by child processes, including those launched by `spark-submit`.
+- `~/.bashrc` - read for each new **interactive shell** (for example, every time you open a new terminal tab).
 
 In `~/.profile`:
 
@@ -98,7 +174,16 @@ fi
 ```
 <!-- END AUTO-CODE -->
 
-In `~/.bashrc`, place the same snippet before the early non-interactive `return`.
+To make `bigdata-env.sh` load automatically in both cases, run:
+
+```bash
+echo '. ~/bigdata-env.sh' >> ~/.profile
+echo '. ~/bigdata-env.sh' >> ~/.bashrc
+```
+
+The `>>` operator **appends** one line to the file without overwriting anything. The `.` is shorthand for `source` - it executes the named file inside the current shell.
+
+> **Run each command exactly once.** Running either command a second time appends a duplicate line. If that happens, open the file with `nano ~/.profile` or `nano ~/.bashrc` and delete the extra line.
 
 Finally:
 
@@ -147,7 +232,7 @@ For the WSL path, also verify DNS and HDFS reachability:
 ```bash
 getent hosts termi7.cslab.ece.ntua.gr
 getent hosts hdfs-namenode.default.svc.cluster.local
-kubectl -n YOUR_USERNAME-priv get sa spark
+kubectl -n "$DSML_USER-priv" get sa spark
 ```
 
 ## 4. Configure the Hadoop client
@@ -155,11 +240,13 @@ kubectl -n YOUR_USERNAME-priv get sa spark
 Keep the HDFS config in a per-user path instead of modifying the unpacked binaries.
 
 ```bash
+cd ~/bigdata-dsml
 mkdir -p ~/.hadoop/conf
-nano ~/.hadoop/conf/core-site.xml
+cp templates/wsl/core-site.xml ~/.hadoop/conf/core-site.xml
+cp templates/wsl/log4j.properties ~/.hadoop/conf/log4j.properties
 ```
 
-Put this inside:
+The `core-site.xml` file contains:
 
 <!-- AUTO-CODE: templates/wsl/core-site.xml -->
 ``` xml
@@ -172,54 +259,71 @@ Put this inside:
 ```
 <!-- END AUTO-CODE -->
 
+<!-- AUTO-CODE: templates/wsl/log4j.properties -->
+``` text
+# Minimal Hadoop CLI logging for the DSML lab WSL setup.
+log4j.rootLogger=${hadoop.root.logger}
+hadoop.root.logger=ERROR,console
+
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss} %p %c{2}: %m%n
+```
+<!-- END AUTO-CODE -->
+
 If the lab also provides an `hdfs-site.xml`, place it inside `~/.hadoop/conf/` as well.
+
+The `log4j.properties` file is only there to stop every `hdfs` command from printing the `log4j.properties is not found` warning.
 
 Then verify:
 
 ```bash
 hdfs dfs -ls /
-hdfs dfs -ls /user/$USER
+hdfs dfs -ls /user/$DSML_USER
 ```
 
 ## 5. Per-user `spark-defaults.conf`
 
 The most practical setup for students is to make Kubernetes cluster mode the default for `spark-submit` inside WSL.
 
-Create:
+`spark-defaults.conf` must contain real values, not shell variables. Generate it from the `DSML_USER` value you already set in `~/bigdata-env.sh`:
 
 ```bash
-mkdir -p ~/.spark/conf
-nano ~/.spark/conf/spark-defaults.conf
+source ~/bigdata-env.sh
+bigdata_write_spark_defaults
+cat ~/.spark/conf/spark-defaults.conf
 ```
 
 and put this inside:
 
 <!-- AUTO-CODE: templates/wsl/spark-defaults.conf -->
 ``` properties
-# Replace YOUR_USERNAME with your lab username before first use.
+# Example output written by bigdata_write_spark_defaults.
+# The real file contains your actual DSML_USER value.
 
-spark.master                                                k8s://https://termi7.cslab.ece.ntua.gr:6443
-spark.submit.deployMode                                     cluster
-spark.kubernetes.namespace                                  YOUR_USERNAME-priv
-spark.hadoop.hadoop.job.ugi                                 YOUR_USERNAME
-spark.kubernetes.driverEnv.HADOOP_USER_NAME                 YOUR_USERNAME
-spark.kubernetes.executorEnv.HADOOP_USER_NAME               YOUR_USERNAME
-spark.hadoop.dfs.client.use.datanode.hostname               true
-spark.kubernetes.authenticate.driver.serviceAccountName     spark
-spark.kubernetes.container.image                            apache/spark:3.5.8-scala2.12-java11-python3-ubuntu
-spark.executor.instances                                    1
-spark.kubernetes.submission.waitAppCompletion               false
-spark.eventLog.enabled                                      true
-spark.eventLog.dir                                          hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs
-spark.history.fs.logDirectory                               hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs
+spark.master                                   k8s://https://termi7.cslab.ece.ntua.gr:6443
+spark.submit.deployMode                        cluster
+spark.kubernetes.namespace                     DSML_USER-priv
+spark.kubernetes.authenticate.driver.serviceAccountName spark
+spark.kubernetes.container.image               apache/spark:3.5.8-scala2.12-java11-python3-ubuntu
+spark.executor.instances                       1
+spark.kubernetes.submission.waitAppCompletion  false
+spark.kubernetes.driverEnv.HADOOP_USER_NAME    DSML_USER
+spark.executorEnv.HADOOP_USER_NAME             DSML_USER
+spark.kubernetes.file.upload.path              hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/DSML_USER/.spark-upload
+spark.eventLog.enabled                         true
+spark.eventLog.dir                             hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/DSML_USER/logs
+spark.history.fs.logDirectory                  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/DSML_USER/logs
 ```
 <!-- END AUTO-CODE -->
 
 Before the first submit:
 
-- replace `YOUR_USERNAME`
+- check that the file contains your actual username
 - make sure `spark.master` matches the kubeconfig
 - keep the image pinned instead of using plain `apache/spark`
+- keep the three `HADOOP_USER_NAME` and `spark.kubernetes.file.upload.path` settings, because HDFS home directories are private
 
 ## 6. First upload to HDFS
 
@@ -227,24 +331,31 @@ From the repository root:
 
 ```bash
 cd ~/bigdata-dsml
-hdfs dfs -rm -r -f /user/$USER/examples /user/$USER/code /user/$USER/logs || true
-hdfs dfs -mkdir -p /user/$USER/logs /user/$USER/examples /user/$USER/code
-hdfs dfs -put -f examples/* /user/$USER/examples/
-hdfs dfs -put -f code/*.py /user/$USER/code/
-
-hdfs dfs -ls /user/$USER/examples
-hdfs dfs -ls /user/$USER/code
+hdfs dfs -ls -d /user/$DSML_USER
+hdfs dfs -ls -d /user/$DSML_USER/.spark-upload
+hdfs dfs -ls -d /user/$DSML_USER/logs
 ```
 
-The cleanup line is optional, but useful when you repeat the walkthrough and want clean folders without stale uploads.
+The `/user/$DSML_USER`, `.spark-upload`, and `logs` directories are created by the lab when your account is provisioned. They should already exist and be private. If any of them is missing, do not change permissions yourself; notify the instructor.
+
+For this guide's examples, upload only the data:
+
+```bash
+hdfs dfs -mkdir -p /user/$DSML_USER/examples
+hdfs dfs -chmod 700 /user/$DSML_USER/examples
+hdfs dfs -put -f examples/* /user/$DSML_USER/examples/
+hdfs dfs -ls /user/$DSML_USER/examples
+```
+
+Do not upload `code/*.py` to HDFS. Keep scripts local in WSL and let Spark stage them temporarily under the private `/user/$DSML_USER/.spark-upload` directory when you pass them to `spark-submit`.
 
 ## 7. First `spark-submit`
 
 Once `spark-defaults.conf` is configured, the first submit becomes very simple:
 
 ```bash
-spark-submit hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code/wordcount.py \
-  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
+spark-submit code/wordcount.py \
+  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER
 ```
 
 The canonical code for the example is:
@@ -365,23 +476,58 @@ if __name__ == "__main__":
 After submission:
 
 ```bash
-kubectl -n "$USER-priv" get pods -o wide
-kubectl -n "$USER-priv" logs <driver-pod-name>
-kubectl -n "$USER-priv" describe pod <driver-pod-name>
+kubectl -n "$DSML_USER-priv" get pods -o wide
+kubectl -n "$DSML_USER-priv" logs <driver-pod-name>
+kubectl -n "$DSML_USER-priv" describe pod <driver-pod-name>
 ```
 
 If you use `k9s`:
 
 ```bash
-k9s -n "$USER-priv"
+k9s -n "$DSML_USER-priv"
 ```
 
 Then check output and event logs:
 
 ```bash
-hdfs dfs -ls /user/$USER | grep wordcount_output
-hdfs dfs -ls /user/$USER/logs | tail -n 5
+hdfs dfs -ls /user/$DSML_USER | grep wordcount_output
+hdfs dfs -ls /user/$DSML_USER/logs | tail -n 5
+hdfs dfs -ls /user/$DSML_USER/.spark-upload
 ```
+
+When the user's job is no longer running, you can clean up the temporary staged scripts:
+
+```bash
+hdfs dfs -rm -r -skipTrash /user/$DSML_USER/.spark-upload/spark-upload-* 2>/dev/null || true
+```
+
+### Local History Server for remote logs
+
+If you want to inspect DSML event logs through a local Spark History Server:
+
+```bash
+cd ~/bigdata-dsml/docker/stacks/history-server-lab
+source ~/bigdata-env.sh
+bigdata_write_history_env
+cat .env
+```
+
+The `.env` file should contain your own values:
+
+```env
+SPARK_HISTORY_UI_HOST_PORT=18086
+HADOOP_USER_NAME=DSML_USER
+SPARK_HISTORY_LOG_DIR=hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/DSML_USER/logs
+```
+
+Then start the History Server:
+
+```bash
+docker compose up --build -d
+curl http://localhost:18086/api/v1/applications
+```
+
+`HADOOP_USER_NAME` is required because `/user/<username>/logs` is private in HDFS.
 
 ## Troubleshooting
 
@@ -407,6 +553,25 @@ Check:
 ```bash
 spark-submit --version
 test -f "$SPARK_CONF_DIR/spark-defaults.conf" && sed -n '1,80p' "$SPARK_CONF_DIR/spark-defaults.conf"
+```
+
+### Missing `spark.kubernetes.file.upload.path`
+
+If `spark-submit code/wordcount.py` asks for `spark.kubernetes.file.upload.path`, Spark does not know where to stage the local script in HDFS. Run:
+
+```bash
+source ~/bigdata-env.sh
+bigdata_write_spark_defaults
+```
+
+### `Permission denied` under `.spark-upload` or `logs`
+
+Check that `~/.spark/conf/spark-defaults.conf` contains your username in all three relevant settings:
+
+```properties
+spark.kubernetes.driverEnv.HADOOP_USER_NAME DSML_USER
+spark.executorEnv.HADOOP_USER_NAME DSML_USER
+spark.kubernetes.file.upload.path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/DSML_USER/.spark-upload
 ```
 
 ### Hostnames do not resolve from WSL
