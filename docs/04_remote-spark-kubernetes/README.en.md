@@ -297,7 +297,7 @@ bigdata_write_spark_defaults
 cat ~/.spark/conf/spark-defaults.conf
 ```
 
-and put this inside:
+and check the generated file:
 
 <!-- AUTO-CODE: templates/wsl/spark-defaults.conf -->
 ``` properties

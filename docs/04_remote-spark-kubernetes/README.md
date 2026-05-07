@@ -297,7 +297,7 @@ bigdata_write_spark_defaults
 cat ~/.spark/conf/spark-defaults.conf
 ```
 
-και βάλε:
+και έλεγξε το παραγόμενο αρχείο:
 
 <!-- AUTO-CODE: templates/wsl/spark-defaults.conf -->
 ``` properties
