@@ -70,7 +70,19 @@ cp templates/wsl/bigdata-env.sh ~/bigdata-env.sh
 nano ~/bigdata-env.sh
 ```
 
-Βάλε μέσα:
+Στο πάνω μέρος του αρχείου άλλαξε μόνο τη γραμμή:
+
+```bash
+export DSML_USER="your_dsml_username"
+```
+
+και βάλε το username που σου απέδωσε το εργαστήριο, π.χ.:
+
+```bash
+export DSML_USER="ikons"
+```
+
+Δεν χρειάζεται να το αντιγράψεις με το χέρι. Για έλεγχο, το αρχείο που αντέγραψες περιέχει:
 
 <!-- AUTO-CODE: templates/wsl/bigdata-env.sh -->
 ``` bash
