@@ -230,10 +230,12 @@ kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}{"\n"}'
 Για τη ροή WSL, ελέγξτε και τη διαθεσιμότητα DNS/HDFS:
 
 ```bash
-getent hosts termi7.cslab.ece.ntua.gr
-getent hosts hdfs-namenode.default.svc.cluster.local
+getent ahostsv4 termi7.cslab.ece.ntua.gr
+getent ahostsv4 hdfs-namenode.default.svc.cluster.local
 kubectl -n "$DSML_USER-priv" get sa spark
 ```
+
+Αν θες ένα γρήγορο check, προτίμησε το `ahostsv4`. Στο WSL το `getent hosts` μπορεί να αργεί αρκετά παρότι η επίλυση τελικά πετυχαίνει.
 
 ## 4. Ρύθμιση του Hadoop client
 

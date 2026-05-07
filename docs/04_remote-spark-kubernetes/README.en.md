@@ -230,10 +230,12 @@ In the current lab setup, the Kubernetes API server is `https://termi7.cslab.ece
 For the WSL path, also verify DNS and HDFS reachability:
 
 ```bash
-getent hosts termi7.cslab.ece.ntua.gr
-getent hosts hdfs-namenode.default.svc.cluster.local
+getent ahostsv4 termi7.cslab.ece.ntua.gr
+getent ahostsv4 hdfs-namenode.default.svc.cluster.local
 kubectl -n "$DSML_USER-priv" get sa spark
 ```
+
+If you want a quick check, prefer `ahostsv4`. On WSL, `getent hosts` can be slow even when resolution eventually succeeds.
 
 ## 4. Configure the Hadoop client
 
