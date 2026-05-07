@@ -23,13 +23,13 @@
 
 - Μετά το `01_workstation-setup`, οι τοπικοί οδηγοί (`02`, `03`) υποστηρίζουν δύο διαδρομές:
   - `Windows / PowerShell`, με clone του repo σε φάκελο των Windows
-  - `WSL / Ubuntu`, με clone του repo ως `~/bigdata-uth`
+  - `WSL / Ubuntu`, με clone του repo ως `~/bigdata-dsml`
 - Οι απομακρυσμένοι οδηγοί (`04`, `05`) εκτελούνται μόνο από WSL.
 - Ο οδηγός Docker (`06`) θα μπορούσε θεωρητικά να προσαρμοστεί και σε PowerShell, αλλά στο μάθημα τεκμηριώνεται μόνο η WSL διαδρομή για να μείνει ενιαία η εμπειρία.
 - Αν δουλέψατε τοπικά από Windows και θέλετε να συνεχίσετε στους απομακρυσμένους οδηγούς, περάστε πρώτα σε WSL clone του repo και φορτώστε το περιβάλλον Spark του WSL:
 
 ```bash
-cd ~/bigdata-uth
+cd ~/bigdata-dsml
 deactivate 2>/dev/null || true
 source ~/bigdata-env.sh
 hash -r
@@ -101,7 +101,7 @@ command -v spark-submit
 📄 Οδηγός: [`06_local-cluster-infrastructure-docker`](docs/06_local-cluster-infrastructure-docker)
 
 ```bash
-cd ~/bigdata-uth/docker/stacks/local-spark-hdfs
+cd ~/bigdata-dsml/docker/stacks/local-spark-hdfs
 docker compose up --build -d
 ```
 
@@ -121,10 +121,10 @@ docker exec spark-master /opt/spark/bin/spark-submit /mnt/upload/code/wordcount.
 📄 Οδηγός: [`04_remote-spark-kubernetes`](docs/04_remote-spark-kubernetes)
 
 - Εκτελείται μόνο από WSL
-- Εκτελεί Spark σε Kubernetes (vdcloud)
+- Εκτελεί Spark σε Kubernetes (cslab)
 - Απαιτεί OpenVPN, WSL 2 Ubuntu και per-user `spark-defaults.conf`
 - Προτείνει pinned image `apache/spark:3.5.8-scala2.12-java11-python3-ubuntu`
-- Χρησιμοποιεί Hadoop client ίδιου major/minor line με το vdcloud HDFS
+- Χρησιμοποιεί Hadoop client ίδιου major/minor line με το HDFS του cslab
 
 ### Παράδειγμα `spark-submit`:
 
@@ -150,7 +150,7 @@ spark-submit \
 ## ⚙️ Προετοιμασία Δεδομένων στο HDFS
 
 ```bash
-cd ~/bigdata-uth
+cd ~/bigdata-dsml
 hadoop fs -rm -r -f /user/$USER/examples /user/$USER/code || true
 hadoop fs -mkdir -p /user/$USER/examples /user/$USER/code
 hadoop fs -put -f examples/* /user/$USER/examples/
@@ -195,4 +195,4 @@ spark-submit hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code
 ## 👤 Συντελεστής
 
 **ikons**  
-📬 Για απορίες: [GitHub Issues](https://github.com/ikons/bigdata-uth/issues)
+📬 Για απορίες: [GitHub Issues](https://github.com/ikons/bigdata-dsml/issues)

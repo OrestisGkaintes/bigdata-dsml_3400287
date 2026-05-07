@@ -5,7 +5,7 @@ This stack is the implementation used by the student-facing guide `06_local-clus
 Quick start:
 
 ```bash
-cd ~/bigdata-uth/docker/stacks/local-spark-hdfs
+cd ~/bigdata-dsml/docker/stacks/local-spark-hdfs
 docker compose up --build -d
 ```
 

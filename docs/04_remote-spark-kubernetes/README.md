@@ -140,12 +140,12 @@ kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}{"\n"}'
 
 Το endpoint του Kubernetes API δεν πρέπει να αντιγράφεται από παλιά screenshots. Πρέπει να προκύπτει από το kubeconfig που έδωσε το εργαστήριο.
 
-Στην τρέχουσα εργαστηριακή ρύθμιση, το σωστό internal DNS name είναι `source-code-master.cluster.local`, αλλά το kubeconfig παραμένει η πηγή αλήθειας.
+Στην τρέχουσα εργαστηριακή ρύθμιση, το Kubernetes API server είναι `https://termi7.cslab.ece.ntua.gr:6443`, αλλά το kubeconfig παραμένει η πηγή αλήθειας.
 
 Για τη ροή WSL, ελέγξτε και τη διαθεσιμότητα DNS/HDFS:
 
 ```bash
-getent hosts source-code-master.cluster.local
+getent hosts termi7.cslab.ece.ntua.gr
 getent hosts hdfs-namenode.default.svc.cluster.local
 kubectl -n YOUR_USERNAME-priv get sa spark
 ```
@@ -414,7 +414,7 @@ test -f "$SPARK_CONF_DIR/spark-defaults.conf" && sed -n '1,80p' "$SPARK_CONF_DIR
 Έλεγξε πρώτα:
 
 ```bash
-getent hosts source-code-master.cluster.local
+getent hosts termi7.cslab.ece.ntua.gr
 getent hosts hdfs-namenode.default.svc.cluster.local
 ```
 
@@ -423,5 +423,4 @@ getent hosts hdfs-namenode.default.svc.cluster.local
 ## Τι ακολουθεί
 
 Αφού περάσει το πρώτο απομακρυσμένο submit, προχωρήστε στον οδηγό [ίδιων ερωτημάτων στη συστοιχία](../05_cluster-queries-rdd-df-sql/README.md), όπου εκτελούμε τα ίδια `Q1-Q3` ερωτήματα με `RDD`, `DataFrame API` και `Spark SQL`.
-
 

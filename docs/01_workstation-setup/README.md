@@ -377,7 +377,7 @@ kubectl -n <username>-priv get sa spark
 
 Στη ρύθμιση που δημιουργεί το provisioning tool του εργαστηρίου:
 
-- ο server του cluster είναι `https://source-code-master.cluster.local:6443`
+- ο server του cluster είναι `https://termi7.cslab.ece.ntua.gr:6443`
 - δημιουργούνται τα contexts `development` και `<username>-priv`
 - το default current context τίθεται στο `<username>-priv`
 
@@ -420,5 +420,4 @@ cd bigdata-dsml
 - Για `02` και `03`, μπορείτε να δουλέψετε είτε από PowerShell είτε από WSL.
 - Για `04` και `05`, δουλεύετε μόνο από WSL.
 - Αν ξεκινήσετε τοπικά από Windows, μπορείτε αργότερα να κάνετε δεύτερο clone στο WSL μόνο για την απομακρυσμένη διαδρομή.
-
 

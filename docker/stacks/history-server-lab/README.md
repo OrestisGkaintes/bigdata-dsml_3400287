@@ -7,7 +7,7 @@ Use the fully qualified HDFS service name in `.env`, not the short `hdfs-namenod
 Typical setup:
 
 ```bash
-cd ~/bigdata-uth/docker/stacks/history-server-lab
+cd ~/bigdata-dsml/docker/stacks/history-server-lab
 cp .env.example .env
 # edit .env and set SPARK_HISTORY_LOG_DIR for your user, for example:
 # SPARK_HISTORY_LOG_DIR=hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs

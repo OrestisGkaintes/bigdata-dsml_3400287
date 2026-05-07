@@ -1,6 +1,6 @@
 # 🔥 Big Data with Apache Spark, HDFS, Docker & Kubernetes
 
-This repository contains code, datasets, and execution guides for **Apache Spark** workloads using **RDDs**, **DataFrames**, and **Map/Reduce**, both on a **local Docker-based setup** and on a **distributed Kubernetes environment**, for the course [Big Data Management Systems](https://dit.uth.gr/wp-content/uploads/2023/10/Perigrama-Systimata-Diaxeirisis-Megalou-Ogkou-Dedomenon-neo.pdf) of the [Department of Informatics and Telecommunications](http://www.dit.uth.gr), [University of Thessaly](http://www.uth.gr).
+This repository contains code, datasets, and execution guides for **Apache Spark** workloads using **RDDs**, **DataFrames**, and **Map/Reduce**, both on a **local Docker-based setup** and on a **distributed Kubernetes environment**, for the course [Large-Scale Data Management](https://dsml.ece.ntua.gr/studies/courses/diacheirise-dedomenon-megales-klimakas) of the [Interdepartmental Graduate Program in Data Science and Machine Learning](https://dsml.ece.ntua.gr/) at the [National Technical University of Athens](http://www.ntua.gr).
 
 ---
 

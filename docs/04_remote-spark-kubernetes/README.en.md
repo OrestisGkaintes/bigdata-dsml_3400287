@@ -140,12 +140,12 @@ kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}{"\n"}'
 
 The Kubernetes API endpoint must not be copied from stale screenshots. It must come from the kubeconfig provided by the lab.
 
-In the current lab setup, the correct internal DNS name is `source-code-master.cluster.local`, but the kubeconfig remains the source of truth.
+In the current lab setup, the Kubernetes API server is `https://termi7.cslab.ece.ntua.gr:6443`, but the kubeconfig remains the source of truth.
 
 For the WSL path, also verify DNS and HDFS reachability:
 
 ```bash
-getent hosts source-code-master.cluster.local
+getent hosts termi7.cslab.ece.ntua.gr
 getent hosts hdfs-namenode.default.svc.cluster.local
 kubectl -n YOUR_USERNAME-priv get sa spark
 ```
@@ -198,16 +198,20 @@ and put this inside:
 ``` properties
 # Replace YOUR_USERNAME with your lab username before first use.
 
-spark.master                                   k8s://https://source-code-master.cluster.local:6443
-spark.submit.deployMode                        cluster
-spark.kubernetes.namespace                     YOUR_USERNAME-priv
-spark.kubernetes.authenticate.driver.serviceAccountName spark
-spark.kubernetes.container.image               apache/spark:3.5.8-scala2.12-java11-python3-ubuntu
-spark.executor.instances                       1
-spark.kubernetes.submission.waitAppCompletion  false
-spark.eventLog.enabled                         true
-spark.eventLog.dir                             hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs
-spark.history.fs.logDirectory                  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs
+spark.master                                                k8s://https://termi7.cslab.ece.ntua.gr:6443
+spark.submit.deployMode                                     cluster
+spark.kubernetes.namespace                                  YOUR_USERNAME-priv
+spark.hadoop.hadoop.job.ugi                                 YOUR_USERNAME
+spark.kubernetes.driverEnv.HADOOP_USER_NAME                 YOUR_USERNAME
+spark.kubernetes.executorEnv.HADOOP_USER_NAME               YOUR_USERNAME
+spark.hadoop.dfs.client.use.datanode.hostname               true
+spark.kubernetes.authenticate.driver.serviceAccountName     spark
+spark.kubernetes.container.image                            apache/spark:3.5.8-scala2.12-java11-python3-ubuntu
+spark.executor.instances                                    1
+spark.kubernetes.submission.waitAppCompletion               false
+spark.eventLog.enabled                                      true
+spark.eventLog.dir                                          hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs
+spark.history.fs.logDirectory                               hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/YOUR_USERNAME/logs
 ```
 <!-- END AUTO-CODE -->
 
@@ -410,7 +414,7 @@ test -f "$SPARK_CONF_DIR/spark-defaults.conf" && sed -n '1,80p' "$SPARK_CONF_DIR
 First check:
 
 ```bash
-getent hosts source-code-master.cluster.local
+getent hosts termi7.cslab.ece.ntua.gr
 getent hosts hdfs-namenode.default.svc.cluster.local
 ```
 
@@ -419,5 +423,3 @@ If these do not resolve, the problem is in the VPN or the WSL DNS path, not in t
 ## What comes next
 
 Once the first remote submit works, continue to the guide for [the same queries on the cluster](../05_cluster-queries-rdd-df-sql/README.en.md), where we run the same `Q1-Q3` questions with `RDD`, the `DataFrame API`, and `Spark SQL`.
-
-
