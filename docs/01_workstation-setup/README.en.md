@@ -343,6 +343,14 @@ mv ./kubectl ~/.local/bin/kubectl
 kubectl version --client
 ```
 
+Optionally, for `k9s`:
+
+```bash
+curl -LO https://github.com/derailed/k9s/releases/download/v0.40.10/k9s_linux_amd64.deb
+sudo dpkg -i k9s_linux_amd64.deb
+echo "export KUBE_EDITOR=nano" >> ~/.bashrc
+```
+
 ## Configure VPN and kubeconfig for `cslab-k8 cloud`
 
 From the lab email, you should already have downloaded to Windows:
