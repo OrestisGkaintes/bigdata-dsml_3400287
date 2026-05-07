@@ -14,10 +14,12 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
+This standalone lab stack defaults to `18086` so it can run alongside the local `spark-history` service that uses `18081`.
+
 Recommended smoke test:
 
 ```bash
-curl http://localhost:18081/api/v1/applications
+curl http://localhost:18086/api/v1/applications
 ```
 
 Why this endpoint is useful:

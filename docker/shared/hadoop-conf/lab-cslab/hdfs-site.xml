@@ -1,0 +1,3 @@
+<configuration>
+  <!-- Add cslab-specific HDFS client properties here if the lab setup needs them. -->
+</configuration>
