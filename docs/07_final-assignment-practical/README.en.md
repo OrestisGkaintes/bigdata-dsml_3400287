@@ -71,8 +71,8 @@ spark-submit \
   --conf spark.executor.instances=4 \
   --conf spark.executor.cores=1 \
   --conf spark.executor.memory=2g \
-  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code/<your_script>.py \
-  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
+  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER/code/<your_script>.py \
+  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER
 ```
 
 ## 3. Timing execution correctly
@@ -111,8 +111,8 @@ spark-submit \
   --conf spark.executor.instances=4 \
   --conf spark.executor.cores=1 \
   --conf spark.executor.memory=2g \
-  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code/Q2_df.py \
-  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
+  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER/code/Q2_df.py \
+  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER
 ```
 
 Then use the `Duration` value from History Server in your comparison table, if the service is available.

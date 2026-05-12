@@ -136,8 +136,8 @@ deactivate 2>/dev/null || true
 source ~/bigdata-env.sh
 hash -r
 spark-submit \
-    hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code/wordcount.py \
-    --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
+    hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER/code/wordcount.py \
+    --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER
 ```
 
 ---
@@ -154,14 +154,14 @@ This lab implements the core `Q1-Q3` relational-style tasks with `RDD`, the `Dat
 
 ```bash
 cd ~/bigdata-dsml
-hadoop fs -rm -r -f /user/$USER/examples /user/$USER/code || true
-hadoop fs -mkdir -p /user/$USER/examples /user/$USER/code
-hadoop fs -put -f examples/* /user/$USER/examples/
-hadoop fs -put -f code/*.py /user/$USER/code/
+hadoop fs -rm -r -f /user/$DSML_USER/examples /user/$DSML_USER/code || true
+hadoop fs -mkdir -p /user/$DSML_USER/examples /user/$DSML_USER/code
+hadoop fs -put -f examples/* /user/$DSML_USER/examples/
+hadoop fs -put -f code/*.py /user/$DSML_USER/code/
 
 # Verify
-hadoop fs -ls /user/$USER/examples
-hadoop fs -ls /user/$USER/code
+hadoop fs -ls /user/$DSML_USER/examples
+hadoop fs -ls /user/$DSML_USER/code
 ```
 
 ---
@@ -186,8 +186,8 @@ Example:
 deactivate 2>/dev/null || true
 source ~/bigdata-env.sh
 hash -r
-spark-submit hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code/RddQ1.py \
-  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
+spark-submit hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER/code/RddQ1.py \
+  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER
 ```
 
 This form assumes that your WSL already uses the per-user `spark-defaults.conf` from [04_remote-spark-kubernetes](docs/04_remote-spark-kubernetes).

@@ -71,8 +71,8 @@ spark-submit \
   --conf spark.executor.instances=4 \
   --conf spark.executor.cores=1 \
   --conf spark.executor.memory=2g \
-  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code/<your_script>.py \
-  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
+  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER/code/<your_script>.py \
+  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER
 ```
 
 
@@ -113,8 +113,8 @@ spark-submit \
   --conf spark.executor.instances=4 \
   --conf spark.executor.cores=1 \
   --conf spark.executor.memory=2g \
-  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER/code/Q2_df.py \
-  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$USER
+  hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER/code/Q2_df.py \
+  --base-path hdfs://hdfs-namenode.default.svc.cluster.local:9000/user/$DSML_USER
 ```
 
 Μετά πάρε τον χρόνο από το πεδίο `Duration` στον History Server, αν είναι διαθέσιμος, για τον πίνακα συγκρίσεων.
