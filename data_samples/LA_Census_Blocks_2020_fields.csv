@@ -1,0 +1,31 @@
+Attribute,Data Type,Meaning
+OBJECTID,OID,Object identifier (unique record ID)
+State,String (2),"State FIPS code (""06"" for California)"
+COUNTY,String (3),"County FIPS code (""037"" for Los Angeles County)"
+CT20,String (6),Census tract number (6 digits)
+BG20,String (7),Block group number (7 digits)
+CB20,String (4),Census block number (4 digits)
+CTCB20,String (10),Combined census tract and block identifier
+FEAT_TYPE,String (20),"Feature type: land use classification (water, ocean, or land)"
+FIP20,String (5),Los Angeles County FIPS code
+BGFIP20,String (12),Combined block group and FIPS code
+CITY,String (50),Incorporated city name
+COMM,String (50),Unincorporated community name or LA City neighborhood (CSA)
+CITYCOMM,String (75),Combined city/community name label
+ZCTA20,String (5),ZIP Code Tabulation Area (parcel-specific zipcode)
+HD22,Integer,Health District number (2022)
+HD_NAME,String (40),Health District name
+SPA22,Integer,Service Planning Area number (2022)
+SPA_NAME,String (40),Service Planning Area name
+SUP21,String (1),2021 Supervisorial District number
+SUP_LABEL,String (10),Supervisorial District label
+POP20,Integer,2020 Census population count
+HOUSING20,Integer,Total housing units count
+FIP_CURRENT,String (5),Current FIPS code
+BG20FIP_CURRENT,String (12),Current block group FIPS combination
+CITY_CURRENT,String (50),Current city name
+COMM_CURRENT,String (50),Current community name
+CITYCOMM_CURRENT,String (75),Current city/community combined label
+Shape,Geometry,Polygon geometry of the census block
+Shape.STArea(),Double,Area of the census block polygon
+Shape.STLength(),Double,Perimeter length of the census block polygon
