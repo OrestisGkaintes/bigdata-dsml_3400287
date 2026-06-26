@@ -1,10 +1,12 @@
-"""Query 2 - DataFrame API.
-
-For each year, the 3 months with the most crimes. year/month are parsed from
-DATE OCC ("MM/DD/YYYY HH:MM:SS AM/PM") by splitting on '/'. We rank per year
-with a window and keep the top 3, then order by year asc / crime_total desc.
 """
+Query 2 - DataFrame API.
+
+For each year, find the 3 months with the most crimes.
+DATE OCC has format: yyyy MMM dd hh:mm:ss a
+"""
+
 import sys
+
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
@@ -14,22 +16,37 @@ from common import get_spark, read_crime, timed
 def main():
     fmt = sys.argv[1] if len(sys.argv) > 1 else "csv"
     spark = get_spark("Q2-DataFrame")
-    crime = read_crime(spark, fmt)
 
-    df = (crime
-          .withColumn("month", F.split(F.col("DATE OCC"), "/").getItem(0).cast("int"))
-          .withColumn("year",
-                      F.substring(F.split(F.col("DATE OCC"), "/").getItem(2), 1, 4).cast("int")))
+    try:
+        crime = read_crime(spark, fmt)
 
-    with timed(f"Q2 DataFrame ({fmt})"):
-        counts = df.groupBy("year", "month").agg(F.count(F.lit(1)).alias("crime_total"))
-        w = Window.partitionBy("year").orderBy(F.desc("crime_total"))
-        ranked = (counts.withColumn("ranking", F.row_number().over(w))
-                  .filter(F.col("ranking") <= 3))
-        result = ranked.orderBy(F.asc("year"), F.desc("crime_total"))
-        result.show(60, truncate=False)
+        with timed(f"Q2 DataFrame ({fmt})"):
+            w = Window.partitionBy("year").orderBy(
+                F.desc("crime_total"),
+                F.asc("month")
+            )
 
-    spark.stop()
+            result = (
+                crime
+                .select(
+                    F.to_timestamp("DATE OCC", "yyyy MMM dd hh:mm:ss a").alias("date_occ")
+                )
+                .where(F.col("date_occ").isNotNull())
+                .groupBy(
+                    F.year("date_occ").alias("year"),
+                    F.month("date_occ").alias("month")
+                )
+                .count()
+                .withColumnRenamed("count", "crime_total")
+                .withColumn("ranking", F.row_number().over(w))
+                .where(F.col("ranking") <= 3)
+                .orderBy("year", "ranking")
+            )
+
+            result.show(60, truncate=False)
+
+    finally:
+        spark.stop()
 
 
 if __name__ == "__main__":
